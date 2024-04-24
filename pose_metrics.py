@@ -7,6 +7,7 @@ import shutil
 import zipfile
 import subprocess
 import numpy as np
+import cv2
 
 from pathlib import Path
 from scipy.spatial.transform import Rotation
@@ -180,3 +181,81 @@ def compute_ape(traj_1, traj_2,
 
     # Return the results
     return evaluation_results
+
+
+def rotational_error(R1, R2):
+    """ Compute a scalar metric for error between two rotations
+    
+    Source: https://stackoverflow.com/questions/6522108/error-between-two-rotations
+
+    :param R1: first rotation matrix (shape: (3,3))
+    :param R2: second rotation matrix (shape: (3,3))
+    """
+    rotator, _ = cv2.Rodrigues(R1.dot(R2.T))
+    error = np.linalg.norm(rotator)
+    return error
+
+
+def zero_transform_tum_data(times, positions, quaternions, scaling=1.0):
+    """ Zero transforms TUM data to make the first entry have 0 position and identity rotation
+    
+    :param times: list of times
+    :param positions: list of positions (list of 3-vectors)
+    :param quaternions: list of quaternions (list of 4-vectors representing quaternions x,y,z,w)
+    :param scaling: scaling factor
+    :returns: [times, new_positions, new_quaternions]
+    """
+    pose_offset = positions[0] # want to move to zero
+    rotation_offset = Rotation.from_quat(quaternions[0]).as_matrix().T # get inverse of rotation
+    new_positions, new_quaternions = [], []
+    for (p, q) in zip(positions, quaternions):
+        new_positions.append((p - pose_offset) * scaling)
+        new_quaternions.append(
+             #TODO: is order right?
+            Rotation.from_matrix((rotation_offset @ Rotation.from_quat(q).as_matrix())).as_quat()
+        )
+    return times, new_positions, new_quaternions
+
+
+def compute_pose_error(traj_1, traj_2, align='posescale', print_results=True):
+    """ Compute step-wise pose error in rotation and translation
+    
+    :param traj_1: first trajectory - tuple of form (times, positions, quaternions)
+    :parma traj_2: second trajectory - tuple of form (times, positions, quaternions)
+    :param align: method of alignment (none, pose, or posescale)
+        - if scale is used, then the first trajectory should be the "ground truth"
+    :param print_results: if True, we print the results
+    :return: result metrics as a dictionary
+    """
+
+    assert(align in ['pose', 'posescale', 'none'])
+
+    # Do alignment
+    if align == 'pose' or align == 'posescale':
+        traj_2_scaling = np.linalg.norm(traj_1[1][-1] - traj_1[1][0], ord=2) if align == 'posescale' else 1.0
+        traj_1 = zero_transform_tum_data(*traj_1, scaling=1.0)
+        traj_2 = zero_transform_tum_data(*traj_2, scaling=traj_2_scaling)
+
+    errors = {
+        'translation': [],
+        'rotation': []
+    }
+    for i in range(len(traj_1[0])):
+        pose1, pose2 = traj_1[1][i], traj_2[1][i]
+        quat1, quat2 = traj_1[2][i], traj_2[2][i]
+        rot1, rot2 = Rotation.from_quat(quat1).as_matrix(), Rotation.from_quat(quat2).as_matrix()
+        errors['translation'].append(np.linalg.norm(pose1 - pose2, ord=2))
+        errors['rotation'].append(rotational_error(rot1, rot2))
+    errors['translation'] = np.array(errors['translation'])
+    errors['rotation'] = np.array(errors['rotation'])
+
+    if print_results:
+        print("Avg error in translation = {:.3f} (min = {:.3f}, max = {:.3f}, final = {:.3f})".format(
+            errors['translation'].mean(), errors['translation'].min(), errors['translation'].max(), errors['translation'][-1]
+        ))
+        print("Avg error in rotation = {:.3f} (min = {:.3f}, max = {:.3f}, final = {:.3f})".format(
+            errors['rotation'].mean(), errors['rotation'].min(), errors['rotation'].max(), errors['rotation'][-1]
+        ))
+
+    # Return the results
+    return errors
