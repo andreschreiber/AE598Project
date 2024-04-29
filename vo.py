@@ -337,3 +337,49 @@ def show_reproj_results(views, tracks, K, distortion, print_raw_reproj=True, sho
             ax.legend()
             ax.grid()
         plt.show()
+
+
+def visualize_predictions(views, tracks, K, distortion):
+    """ Visualize the results by reprojecting on the original images
+
+    :param views: views to use
+    :param tracks: tracks to use
+    :param K: camera matrix (shape: (3,3))
+    :param distortion: distortion coefficients (array of length 4)
+    """
+
+    # Extract the views that have been processed (non-null poses)
+    selected_views = [view for view in views if view['R_inB_ofA'] is not None]
+    assert(len(selected_views) == len(views)) # make sure all views selected
+
+    # Create figure
+    axs = plt.figure(figsize=(4*len(selected_views), 4)).subplots(1, len(selected_views))
+
+    # Show each of the extracted views
+    for i in range(len(selected_views)):
+        view = selected_views[i]
+        axs[i].imshow(selected_views[i]['img'], cmap='gray')
+        axs[i].axis('off')
+
+    # Iterate through and project points in each view as red crosses
+    for t in tracks:
+        if t['valid']:
+            for m in t['matches']:
+                R, p = views[m['view_id']]['R_inB_ofA'], views[m['view_id']]['p_inB_ofA']
+                proj = sfm.project(K, R, p, np.row_stack([t['p_inA']]), warn=False, distortion=distortion)[0]
+                axs[m['view_id']].plot(
+                    [proj[0]],
+                    [proj[1]],
+                    'rx', markersize=4
+                )
+
+    # Show groundtruth points as blue crosses.
+    for t in tracks:
+        if t['valid']:
+            for m in t['matches']:
+                axs[m['view_id']].plot(
+                    [views[m['view_id']]['pts'][m['feature_id']]['pt2d_raw'][0]],
+                    [views[m['view_id']]['pts'][m['feature_id']]['pt2d_raw'][1]],
+                    'bx', markersize=2
+                )
+    plt.show()
