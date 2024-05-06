@@ -689,13 +689,23 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
     initial_values['Cov_gyr_bias'] = Cov_gyr_bias
 
     # IMPORTANT: Rescale translation between views to be at scale
-    if (T_C0_W is None and T_C1_W is None):
+    if 'T_inC0_ofW' is None and 'T_inC1_ofW' is None:
+        # Compute the translation delta as a function of velocity, time, and gravity
         dp = initial_values['T_inC0_ofW'].R.to_rotation_matrix().T @ T_inC_ofB[:3,:3] @ initial_values['dp_01'] \
             + initial_values['vel_0'] * initial_values['dt_01'] + 0.5 * initial_values['gravity'] * initial_values['dt_01'] ** 2
-        # print(np.linalg.norm(dp))
-        # print(np.linalg.norm(initial_values['T_inC1_ofW'].t))
-        initial_values['T_inC1_ofW'] = sym.Pose3(R=initial_values['T_inC1_ofW'].R, 
-                                                 t=np.linalg.norm(dp) / np.linalg.norm(initial_values['T_inC1_ofW'].t) * initial_values['T_inC1_ofW'].t)
+        # Compute absolute positions in world coordinates
+        p_inW_ofC0 = - initial_values['T_inC0_ofW'].R.to_rotation_matrix().T @ initial_values['T_inC0_ofW'].t
+        p_inW_ofC1 = - initial_values['T_inC1_ofW'].R.to_rotation_matrix().T @ initial_values['T_inC1_ofW'].t
+        # Compute the relative position between cameras
+        p_inW_ofC0toC1 = p_inW_ofC1 - p_inW_ofC0
+        # Rescale the relative position to match the scale of dp
+        if np.linalg.norm(p_inW_ofC0toC1) != 0:  # Avoid division by zero
+            p_inW_ofC0toC1 *= np.linalg.norm(dp) / np.linalg.norm(p_inW_ofC0toC1)
+        p_inW_ofC1 = p_inW_ofC0 + p_inW_ofC0toC1
+        # Convert back to camera 1's local coordinates
+        p_inC1_ofW = - initial_values['T_inC1_ofW'].R.to_rotation_matrix() @ p_inW_ofC1
+        # Update the transformation for camera 1
+        initial_values['T_inC1_ofW'] = sym.Pose3(R=initial_values['T_inC1_ofW'].R, t=p_inC1_ofW)
 
     # Step 3-1: Add a residual associating poses and velocities between frames
     factors.append(Factor(
