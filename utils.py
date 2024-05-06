@@ -213,7 +213,7 @@ def read_data_kitti(base_path, date, drive):
     cam0_distortion = None # camera images already undistorted
     cam0_extrinsics = pyk_raw.calib.T_cam0_imu # this is from IMU to camera frame
     
-    imu_extrinics = np.eye(4)
+    imu_extrinsics = np.eye(4)
 
     visual_inertial_data = collect_visual_inertial_data_kitti(pyk_raw)
 
@@ -221,7 +221,7 @@ def read_data_kitti(base_path, date, drive):
         'cam0_K': cam0_K,
         'cam0_distortion': cam0_distortion,
         'cam0_extrinsics': cam0_extrinsics,
-        'imu_extrinics': imu_extrinics,
+        'imu_extrinsics': imu_extrinsics,
         'visual_inertial_data': visual_inertial_data
     }
 
