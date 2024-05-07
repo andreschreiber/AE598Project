@@ -1,5 +1,10 @@
-# Author: Jongwon Lee
-# This file contains code for two-view reconstruction with inertial data
+'''
+Code for two-view reconstruction with inertial data.
+This code is written upon vo.py.
+
+Author: Jongwon Lee
+Date: May 7th, 2024
+'''
 
 import sys
 import cv2
@@ -479,9 +484,9 @@ Residuals associated with inetial data
 # See Eq. 37 in Forster or Eq.A.21 in Supplementary
 def imu_preintegration_residual(
         # Keys subject to optimize
-        T_ofCi_inW: sf.Pose3,
+        T_inCi_ofW: sf.Pose3,
         vel_i: sf.V3,
-        T_ofCj_inW: sf.Pose3,
+        T_inCj_ofW: sf.Pose3,
         vel_j: sf.V3,
         # acc_bias_i: sf.V3,
         # gyr_bias_i: sf.V3,
@@ -493,17 +498,17 @@ def imu_preintegration_residual(
         dt_ij: sf.Scalar,
         # Constants
         gravity: sf.V3,
-        T_ofB_inC: sf.Pose3,
+        T_inB_ofC: sf.Pose3,
         # Epsilon
         epsilon: sf.Scalar,
         ) -> sf.V9:
-    T_ofBi_inW = T_ofB_inC * T_ofCi_inW
-    T_ofBj_inW = T_ofB_inC * T_ofCj_inW
-
-    R_i = T_ofBi_inW.R.to_rotation_matrix()
-    p_i = T_ofBi_inW.t
-    R_j = T_ofBj_inW.R.to_rotation_matrix()
-    p_j = T_ofBj_inW.t
+    T_inW_ofBi = (T_inB_ofC * T_inCi_ofW).inverse()
+    T_inW_ofBj = (T_inB_ofC * T_inCj_ofW).inverse()
+    
+    R_i = T_inW_ofBi.R.to_rotation_matrix()
+    p_i = T_inW_ofBi.t
+    R_j = T_inW_ofBj.R.to_rotation_matrix()
+    p_j = T_inW_ofBj.t
 
     # Refer to Eq. 37 in Forster or Eq.A.21 in Supplementary
     residual_dR_ij = sf_Vee(sf_logm(dR_ij.T * R_i.T * R_j))
@@ -533,11 +538,26 @@ def imu_bias_residual(
 
     return sqrt_info * sf.V6((gyr_bias_j - gyr_bias_i).col_join(acc_bias_j - acc_bias_i))
 
+def sf_scale_residual(
+        T_inCi_ofW: sf.Pose3,
+        T_inCj_ofW: sf.Pose3,
+        p_inW_ofCiCj: sf.V3,
+        epsilon: sf.Scalar,
+        ) -> sf.V1:
+    """
+    Symbolic function that computes the relative distance between two frames.
+    """
+    T_inW_ofCi = T_inCi_ofW.inverse()
+    T_inW_ofCj = T_inCj_ofW.inverse()
+    
+    return sf.V1((T_inW_ofCj.t - T_inW_ofCi.t).norm() - p_inW_ofCiCj.norm()) * 1e3 # multiply 1e3 to enforce as a strong constraint
 
 """
 Functions for optimization
 """
 def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB, 
+                  sigma_acc_wn, sigma_gyr_wn, sigma_acc_rw, sigma_gyr_rw, dt,
+                  b_a_0=None, b_a_1=None, b_w_0=None, b_w_1=None,
                   vel_0=None, vel_1=None, T_C0_W=None, T_C1_W=None):
     """
     Returns a symforce optimizer and a set of initial_values that
@@ -641,37 +661,30 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
     ### NOTE: Incorporating IMU starts here
 
     # Step 0: Define required parameters for IMUs
-    sigma_acc_wn = 1e-4  # accelerometer white noise sigma
-    sigma_gyr_wn = 1e-6  # gyroscope white noise sigma
-    sigma_acc_rw = 1e-5  # accelerometer random walk sigma
-    sigma_gyr_rw = 1e-7  # gyroscope random walk sigma
-
-    dt = 0.1
-
     Cov_acc_bias = sigma_acc_rw ** 2  * dt
     Cov_gyr_bias = sigma_gyr_rw ** 2  * dt
 
     # Step 1: Perform IMU preintegration
-    integrator = imu_preintegration.Preintegrator(dt, sigma_acc_wn**2, sigma_gyr_wn**2)        
+    integrator = imu_preintegration.Preintegrator(dt, sigma_acc_wn**2, sigma_gyr_wn**2, b_a_0, b_w_0)        
     # integrator.set_bias(acc_bias, gyr_bias)
     dR, dv, dp, Sigma = integrator.integrate(acc_meas, gyr_meas)
     chol = np.linalg.cholesky(np.linalg.inv(Sigma))
     sqrt_info = chol.T
-    
+
     # Step 2: Add required initial values
     # Below are variables being optimized
-    for i, _ in enumerate(views):
-        initial_values[f'vel_{i}'] = np.zeros(3)
-        initial_values[f'acc_bias_{i}'] = np.zeros(3)
-        initial_values[f'gyr_bias_{i}'] = np.zeros(3)
+    initial_values['vel_0'] = vel_0 if vel_0 is not None else np.zeros(3)
+    initial_values['acc_bias_0'] = b_a_0 if b_a_0 is not None else np.zeros(3)
+    initial_values['gyr_bias_0'] = b_w_0 if b_w_0 is not None else np.zeros(3)
 
+    initial_values['vel_1'] = vel_1 if vel_1 is not None else np.zeros(3)
+    initial_values['acc_bias_1'] = b_a_1 if b_a_1 is not None else np.zeros(3)
+    initial_values['gyr_bias_1'] = b_w_1 if b_w_1 is not None else np.zeros(3)
+
+    for i in range(2):
         optimized_keys.append(f'vel_{i}')
         optimized_keys.append(f'acc_bias_{i}')
         optimized_keys.append(f'gyr_bias_{i}')
-
-    if not (vel_0 is None and vel_1 is None):
-        initial_values['vel_0'] = vel_0
-        initial_values['vel_1'] = vel_1
 
     # Below are values remaining constant
     assert(len(views) == 2)
@@ -687,25 +700,6 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
                                             t=-T_inC_ofB[:3,:3].T @ T_inC_ofB[:3,-1])
     initial_values['Cov_acc_bias'] = Cov_acc_bias
     initial_values['Cov_gyr_bias'] = Cov_gyr_bias
-
-    # IMPORTANT: Rescale translation between views to be at scale
-    if 'T_inC0_ofW' is None and 'T_inC1_ofW' is None:
-        # Compute the translation delta as a function of velocity, time, and gravity
-        dp = initial_values['T_inC0_ofW'].R.to_rotation_matrix().T @ T_inC_ofB[:3,:3] @ initial_values['dp_01'] \
-            + initial_values['vel_0'] * initial_values['dt_01'] + 0.5 * initial_values['gravity'] * initial_values['dt_01'] ** 2
-        # Compute absolute positions in world coordinates
-        p_inW_ofC0 = - initial_values['T_inC0_ofW'].R.to_rotation_matrix().T @ initial_values['T_inC0_ofW'].t
-        p_inW_ofC1 = - initial_values['T_inC1_ofW'].R.to_rotation_matrix().T @ initial_values['T_inC1_ofW'].t
-        # Compute the relative position between cameras
-        p_inW_ofC0toC1 = p_inW_ofC1 - p_inW_ofC0
-        # Rescale the relative position to match the scale of dp
-        if np.linalg.norm(p_inW_ofC0toC1) != 0:  # Avoid division by zero
-            p_inW_ofC0toC1 *= np.linalg.norm(dp) / np.linalg.norm(p_inW_ofC0toC1)
-        p_inW_ofC1 = p_inW_ofC0 + p_inW_ofC0toC1
-        # Convert back to camera 1's local coordinates
-        p_inC1_ofW = - initial_values['T_inC1_ofW'].R.to_rotation_matrix() @ p_inW_ofC1
-        # Update the transformation for camera 1
-        initial_values['T_inC1_ofW'] = sym.Pose3(R=initial_values['T_inC1_ofW'].R, t=p_inC1_ofW)
 
     # Step 3-1: Add a residual associating poses and velocities between frames
     factors.append(Factor(
@@ -738,6 +732,22 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
                 ],
             ))
 
+    # Step 3-3: Enforce distance between to frames to be that from imu preintegration (e.g., rescaling)
+    # Compute the translation delta as a function of velocity, time, and gravity
+    p_inW_ofC0C1 = initial_values['T_inC0_ofW'].R.to_rotation_matrix().T @ T_inC_ofB[:3,:3] @ initial_values['dp_01'] \
+        + initial_values['vel_0'] * initial_values['dt_01'] + 0.5 * initial_values['gravity'] * initial_values['dt_01'] ** 2
+    initial_values['p_inW_ofC0C1'] = p_inW_ofC0C1
+
+    factors.append(Factor(
+                residual=sf_scale_residual,
+                keys=[
+                    'T_inC0_ofW',
+                    'T_inC1_ofW',
+                    'p_inW_ofC0C1',
+                    'epsilon',
+                ],
+            ))
+
     ### NOTE: Incorporating IMU ends here
 
     # Create optimizer
@@ -746,7 +756,7 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
         optimized_keys=optimized_keys,
         debug_stats=True,
         params=Optimizer.Params(
-            iterations=100,
+            iterations=200,
             use_diagonal_damping=True,
             lambda_down_factor=0.1,
             lambda_up_factor=5.,
@@ -758,6 +768,8 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
 
 
 def vio_nonlinear_optimize(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB, max_reprojection_err,
+                           sigma_acc_wn, sigma_gyr_wn, sigma_acc_rw, sigma_gyr_rw, dt,
+                           b_a_0=None, b_a_1=None, b_w_0=None, b_w_1=None,
                            vel_0=None, vel_1=None, T_C0_W=None, T_C1_W=None):
     """ Perform non-linear optimization on views and tracks
     
@@ -768,13 +780,24 @@ def vio_nonlinear_optimize(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB, max_
     :param K: camera matrix (shape: (3,3))
     :param T_inC_ofB: transformation from imu to camera frame (shape: (4,4))
     :param max_reprojection_err: maximum reprojection error
-    :param vel_0: velocity at frame 0
-    :param vel_1: velocity at frame 1
-    :param vel_0: transformation matrix of frame 0 w.r.t. world frame
-    :param vel_1: transformation matrix of frame 1 w.r.t. world frame
+    :param sigma_acc_wn: accelerometer white noise sigma
+    :param sigma_gyr_wn: gyroscope white noise sigma
+    :param sigma_acc_rw: accelerometer random walk sigma
+    :param sigma_gyr_rw: gyroscope random walk sigma
+    :param dt: 
+    :param b_a_0: accelerometer bias at frame 0 (initial guess)
+    :param b_a_1: accelerometer bias at frame 1 (initial guess)
+    :param b_w_0: gyroscope bias at frame 0 (initial guess)
+    :param b_w_1: gyroscope bias at frame 1 (initial guess)
+    :param vel_0: velocity at frame 0 (initial guess)
+    :param vel_1: velocity at frame 1 (initial guess)
+    :param vel_0: transformation matrix of frame 0 w.r.t. world frame (initial guess)
+    :param vel_1: transformation matrix of frame 1 w.r.t. world frame (initial guess)
     :returns: views, tracks
     """
     optimizer, initial_values = get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB, 
+                                              sigma_acc_wn, sigma_gyr_wn, sigma_acc_rw, sigma_gyr_rw, dt,
+                                              b_a_0, b_a_1, b_w_0, b_w_1,
                                               vel_0, vel_1, T_C0_W, T_C1_W)
     result = optimizer.optimize(initial_values)
     new_views, new_tracks = copy_results(views, tracks)
