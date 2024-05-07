@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # For optimization with symforce
 import symforce
-symforce.set_epsilon_to_symbol()
+# symforce.set_epsilon_to_symbol()
 import symforce.symbolic as sf
 from symforce.values import Values
 from symforce.opt.factor import Factor
