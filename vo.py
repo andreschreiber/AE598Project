@@ -57,7 +57,6 @@ def create_view_data(img, id, feature_extractor, K, distortion):
     view = {
         'frame_id': id,
         'img': img,
-        #'processed': False,
         'R_inB_ofA': None,
         'p_inB_ofA': None,
     }
@@ -91,7 +90,7 @@ def vo_2view(views, matching_threshold, K, rng, use_opencv=False, verbose=True,
     :param K: camera matrix (shape: (3,3))
         - note: we assume views have already performed undistortion of points
     :param rng: random number generator
-    :param use_opencv: if True, we use OpenCV's implementation
+    :param use_opencv: if True, we use OpenCV's implementation (NOTE: deprecated and un-tested as of final submission)
     :param verbose: if True, print log messages more verbosely.
     :param ransac_threshold: threshold for ransac inliers (only relevant if use_opencv=False)
     :param ransac_iter: number of ransac iterations (only relevant if use_opencv=False)
@@ -169,7 +168,7 @@ def vo_2view(views, matching_threshold, K, rng, use_opencv=False, verbose=True,
 
 def vo_resection(views, tracks, matching_threshold, K, rng, use_opencv=False, verbose=True,
                  ransac_threshold=2, ransac_iter=1000):
-    """ Perform two-view reconstruction for visual odometry
+    """ Perform resection for visual odometry
     
     :param views: views to use
     :param tracks: tracks to use
@@ -177,7 +176,7 @@ def vo_resection(views, tracks, matching_threshold, K, rng, use_opencv=False, ve
     :param K: camera matrix (shape: (3,3))
         - note: we assume views have already performed undistortion of points
     :param rng: random number generator
-    :param use_opencv: if True, we use OpenCV's implementation
+    :param use_opencv: if True, we use OpenCV's implementation (NOTE: deprecated and un-tested as of final submission)
     :param verbose: if True, print log messages more verbosely.
     :param ransac_threshold: threshold for ransac inliers (only relevant if use_opencv=False)
     :param ransac_iter: number of ransac iterations (only relevant if use_opencv=False)
@@ -277,13 +276,13 @@ def show_reproj_results(views, tracks, K, distortion, print_raw_reproj=True, sho
     :param views: views to use
     :param tracks: tracks to use
     :param K: camera matrix (shape: (3,3))
-    :param distortion: distortion coefficients (array of length 4)
+    :param distortion: distortion coefficients (array of length 4, or None)
     :param print_raw_reproj: if True, we print raw predictions using distortion model
     :param show_reproj_histogram: if True, we show histogram
     """
     
     # Get reprojection errors
-    e_undistorted = [[] for view in views] # reprojection errors with respect to undistorted image points
+    e_undistorted = [[] for view in views] # reprojection errors with respect to pre-processed image points
     e_raw = [[] for view in views] # reprojection errors for raw detections when distortion applied during projection
     for track in tracks:
         if not track['valid']:

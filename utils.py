@@ -1,3 +1,6 @@
+# Utility functions to help with tasks like dataset loading
+# Author: Andre Schreiber
+
 import cv2
 import yaml
 import secrets
@@ -6,6 +9,7 @@ import pandas as pd
 import pykitti
 from pathlib import Path
 from scipy.spatial.transform import Rotation
+
 
 def read_yaml(file):
     """ Reads a YAML file """

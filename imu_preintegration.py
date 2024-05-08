@@ -68,6 +68,14 @@ class Preintegrator:
                  acc_cov, gyr_cov,
                  acc_bias=np.zeros(3), gyr_bias=np.zeros(3),
                  ):
+        """ Creates pre-integrator
+        
+        :param dt: delta time
+        :param acc_cov: covariance for accelerometer
+        :param gyr_cov: covariance for gyro
+        :param acc_bias: accelerometer bias
+        :param gyr_bias: gyroscope bias
+        """
         self.dt = dt
 
         self.Sigma_eta = np.block([[gyr_cov * np.eye(3),        np.zeros((3,3))],
@@ -78,13 +86,25 @@ class Preintegrator:
         self.gyr_bias = gyr_bias
 
     def set_bias(self, acc_bias, gyr_bias):
+        """ Sets the bias for acccelerometer and gyroscope """
         self.acc_bias = acc_bias
         self.gyr_bias = gyr_bias
 
     def set_cov(self, Cov):
+        """ Sets the covariance """
         self.Sigma = Cov
 
     def integrate(self, acc_meas, gyr_meas):
+        """ Perform integration
+
+        :param acc_meas: array of accelerometer measurements
+        :param gyr_meas: array of gyroscope measurements
+        
+        :returns: dR, dv, dp, and Sigma
+            - dR is change in rotation
+            - dv is change in velocity
+            - dp is change in position
+        """
         assert(len(acc_meas) == len(gyr_meas))
 
         Sigma = np.zeros((9,9)) if self.Sigma is None else self.Sigma
@@ -119,6 +139,7 @@ class Preintegrator:
             dp = dp_i_k + dv_i_k * self.dt + 0.5 * dR_i_k @ (acc - self.acc_bias) * self.dt ** 2
 
         return dR, dv, dp, Sigma
+
 
 if __name__ == "__main__":
     sigma_acc_wn = 1e-4  # accelerometer white noise sigma

@@ -1,3 +1,6 @@
+# Author: Andre Schreiber
+# This file contains code for SfM (adapted from HW3)
+
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -62,7 +65,7 @@ def getE(a, b, K, rng, threshold=1e-3, num_iters=1000):
         # Randomly sample 8 indices of data to fit to
         sample_indices = rng.choice(list(range(0, a.shape[0])), 8, replace=False)
 
-        # Estimate essential matrix using the homogenous system (the one with a matrix of Kronecker products given in the theory section of the notebook)
+        # Estimate essential matrix using the homogenous system (the one with a matrix of Kronecker products given in the theory section of Andre's notebook from HW3)
         q1 = alpha[sample_indices]
         q2 = beta[sample_indices]
         M = np.array([
@@ -72,13 +75,13 @@ def getE(a, b, K, rng, threshold=1e-3, num_iters=1000):
                 q2[i][2]*q1[i][0], q2[i][2]*q1[i][1], q2[i][2]*q1[i][2],
             ] for i in range(q1.shape[0])
         ])
-        # We can solve the system using SVD as described in the markdown cell, and then reshape to a 3x3 matrix.
+        # We can solve the system using SVD as described in the appendix of Andre's notebook from HW3, and then reshape to a 3x3 matrix.
         Epp = np.linalg.svd(M)[-1][-1].reshape((3,3))
 
         # Normalize essential matrix so p_inB_ofA has norm 1
         Ep = (np.sqrt(2) / np.linalg.norm(Epp)) * Epp
 
-        # Correct the essential matrix as described in theory section of notebook
+        # Correct the essential matrix as described in theory section of Andre's notebook from HW3
         Up, Sp, VpT = np.linalg.svd(Ep)
         Vp = VpT.T
         U = np.stack([Up[:,0], Up[:,1], Up[:,2] * np.linalg.det(Up)], axis=1)
@@ -138,11 +141,11 @@ def twoview_triangulate(alpha, beta, R_inB_ofA, p_inB_ofA):
 
     # Loop through the points for triangulation
     for i in range(len(alpha)):
-        # Apply procedure described in above markup cell to triangulate
+        # Apply procedure described in Andre's notebook from HW3 to triangulate
         alphai, betai = alpha[i], beta[i]
         # Compute wedge version of alpha_i and beta_i
         salphai, sbetai = skew(alphai), skew(betai)
-        # Solve the linear system for triangulation described in the above markdown cell (equation has form Ax=B, where x = p_inA_i)
+        # Solve the linear system for triangulation (equation has form Ax=B, where x = p_inA_i)
         # Construct least squares A matrix
         lstqA = np.concatenate([np.dot(sbetai, R_inB_ofA), salphai], axis=0)
         # Construct least squares B vector
@@ -213,7 +216,7 @@ def decomposeE(a, b, K, E):
     # Get U and V
     Up, Sp, VpT = np.linalg.svd(E)
     Vp = VpT.T
-    # Make sure U and V satisfy the properties requires (note: the singular value
+    # Make sure U and V satisfy the properties required (note: the last singular value
     # is 0, so I apply the determinant correction just to be safe)
     U = np.stack([Up[:,0], Up[:,1], Up[:,2] * np.linalg.det(Up)], axis=1)
     V = np.stack([Vp[:,0], Vp[:,1], Vp[:,2] * np.linalg.det(Vp)], axis=1)
@@ -329,7 +332,7 @@ def triangulate(track, views, K):
     # Get inverse of K
     Kinv = np.linalg.inv(K)
 
-    # We create the matrix equation for triangulation (of form Ax=b, where x = p_inA) (see appendix of notebook for derivation)
+    # We create the matrix equation for triangulation (of form Ax=b, where x = p_inA) (see appendix of Andre's HW3 notebook for derivation)
     lstq_A = []
     lstq_b = []
     for match in track['matches']:
@@ -387,13 +390,9 @@ def get_optimizer(views, tracks, K):
 
         if i > 0:
             optimized_keys.append(f'T_inB{i}_ofA')
-            #print(f' T_inB{i}_ofA has an initial value and is an optimized key')
-        #else:
-        #    print(f' T_inB{i}_ofA has an initial value')
 
     # Add a factor to fix the scale (the relative distance between frames B0 and
     # B1 will be something close to one).
-    #print(f'T_inB{1}_ofA has an sf_scale_residual factor')
     factors = [
         Factor(
             residual=sf_scale_residual,
@@ -407,24 +406,16 @@ def get_optimizer(views, tracks, K):
     # For each valid track, add its 3d point as an initial value and an optimized
     # key, and then, for each match in this track, add its 2d point as an initial
     # value and add a factor to penalize reprojection error.
-    #print(f'Iterate over {len(tracks)} tracks:')
     for i_track, track in enumerate(tracks):
         if not track['valid']:
             continue
         
-        #if (i_track == 0) or (i_track == len(tracks) - 1):
-        #    print(f' track {i_track}:')
-        #    print(f'  track_{i_track}_p_inA has an initial value and is an optimized key')
-        #elif (i_track == 1):
-        #    print('\n ...\n')
         initial_values[f'track_{i_track}_p_inA'] = track['p_inA']
         optimized_keys.append(f'track_{i_track}_p_inA')
 
         for match in track['matches']:
             view_id = match['view_id']
             feature_id = match['feature_id']
-            #if (i_track == 0) or (i_track == len(tracks) - 1):
-            #    print(f'  track_{i_track}_b_{view_id} has an initial value and an sf_projection_residual factor')
             initial_values[f'track_{i_track}_b_{view_id}'] = views[view_id]['pts'][feature_id]['pt2d']
             factors.append(Factor(
                 residual=sf_projection_residual,
@@ -459,7 +450,7 @@ def get_optimizer(views, tracks, K):
 
 
 
-# The following code was provided by Professor Bretl and has not been modified.
+# The following code was originally provided by Professor Bretl
 
 def myprint(M):
     """
@@ -1063,4 +1054,3 @@ def visualize_results(views, tracks, K, fps):
                 rotation=rr.Quaternion(xyzw=Rotation.from_matrix(R_inA_ofB).as_quat()),
             )
         )
-

@@ -1,10 +1,6 @@
-'''
-Code for two-view reconstruction with inertial data.
-This code is written upon vo.py.
-
-Author: Jongwon Lee
-Date: May 7th, 2024
-'''
+# Code for two-view reconstruction with inertial data.
+# This code is written upon vo.py.
+# Author: Jongwon Lee
 
 import sys
 import cv2
@@ -75,7 +71,6 @@ def create_view_data(img, id, feature_extractor, K, distortion):
     view = {
         'frame_id': id,
         'img': img,
-        #'processed': False,
         'R_inC_ofW': None,
         'p_inC_ofW': None,
     }
@@ -112,7 +107,7 @@ def vo_2view(views, matching_threshold, K, R_inC_ofW, p_inC_ofW, rng,
     :param R_inC_ofW: rotation of world frame expressed in camera frame (shape: (3,3))
     :param p_inC_ofW: translation of world frame expressed in camera frame (shape: (3,))
     :param rng: random number generator
-    :param use_opencv: if True, we use OpenCV's implementation
+    :param use_opencv: if True, we use OpenCV's implementation (NOTE: deprecated and un-tested as of final submission)
     :param verbose: if True, print log messages more verbosely.
     :param ransac_threshold: threshold for ransac inliers (only relevant if use_opencv=False)
     :param ransac_iter: number of ransac iterations (only relevant if use_opencv=False)
@@ -172,10 +167,8 @@ def vo_2view(views, matching_threshold, K, R_inC_ofW, p_inC_ofW, rng,
     # Store pose estimates
     views[0]['R_inC_ofW'] = R_inC_ofW
     views[0]['p_inC_ofW'] = p_inC_ofW
-    #views[0]['processed'] = True
     views[1]['R_inC_ofW'] = R_inY_ofX @ R_inC_ofW
     views[1]['p_inC_ofW'] = R_inY_ofX @ p_inC_ofW + p_inY_ofX
-    #views[1]['processed'] = True
 
     # Always make sure zipped lists are the same length
     assert(len(tracks) == len(p_inX))
@@ -199,7 +192,7 @@ def show_reproj_results(views, tracks, K, distortion, print_raw_reproj=True, sho
     """
     
     # Get reprojection errors
-    e_undistorted = [[] for view in views] # reprojection errors with respect to undistorted image points
+    e_undistorted = [[] for view in views] # reprojection errors with respect to pre-processed image points
     e_raw = [[] for view in views] # reprojection errors for raw detections when distortion applied during projection
     for track in tracks:
         if not track['valid']:
@@ -581,7 +574,6 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
 
     # For each view that has a pose estimate, add this pose estimate as an initial
     # value and (if not the first view) as an optimized key.
-    #print(f'Iterate over {len(views)} views:')
     for i, view in enumerate(views):
         if (view['R_inC_ofW'] is None) or (view['p_inC_ofW'] is None):
             continue
@@ -593,9 +585,6 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
 
         if i > 0:
             optimized_keys.append(f'T_inC{i}_ofW')
-            #print(f' T_inC{i}_ofW has an initial value and is an optimized key')
-        #else:
-        #    print(f' T_inC{i}_ofW has an initial value')
 
 
     if not (T_C0_W is None and T_C1_W is None):
@@ -625,16 +614,10 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
     # For each valid track, add its 3d point as an initial value and an optimized
     # key, and then, for each match in this track, add its 2d point as an initial
     # value and add a factor to penalize reprojection error.
-    #print(f'Iterate over {len(tracks)} tracks:')
     for i_track, track in enumerate(tracks):
         if not track['valid']:
             continue
         
-        #if (i_track == 0) or (i_track == len(tracks) - 1):
-        #    print(f' track {i_track}:')
-        #    print(f'  track_{i_track}_p_inW has an initial value and is an optimized key')
-        #elif (i_track == 1):
-        #    print('\n ...\n')
         initial_values[f'track_{i_track}_p_inW'] = track['p_inW']
         optimized_keys.append(f'track_{i_track}_p_inW')
 

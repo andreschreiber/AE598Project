@@ -39,11 +39,13 @@ def create_tum_pose_file(output_file, times, positions, quaternions):
     return output_file.is_file()
 
 
-def create_tum_data_from_views(times, views):
+def create_tum_data_from_views(times, views, rot_key='R_inB_ofA', pos_key='p_inB_ofA'):
     """ Helper utility function to create TUM data from views 
     
     :param times: times for each view
     :param views: list of views
+    :param rot_key: key for rotations in views
+    :param pos_key: key for poses in views
     :return: (times, positions, quaternions)
     """
     assert(len(times) == len(views))
@@ -51,9 +53,9 @@ def create_tum_data_from_views(times, views):
     positions = []
     quaternions = []
     for view in views:
-        assert(view['R_inB_ofA'] is not None and view['p_inB_ofA'] is not None)
-        positions.append(view['p_inB_ofA'])
-        quaternions.append(Rotation.from_matrix(view['R_inB_ofA']).as_quat())
+        assert(view[rot_key] is not None and view[pos_key] is not None)
+        positions.append(view[pos_key])
+        quaternions.append(Rotation.from_matrix(view[rot_key]).as_quat())
 
     return (times, positions, quaternions)
 
@@ -211,7 +213,6 @@ def zero_transform_tum_data(times, positions, quaternions, scaling=1.0):
     for (p, q) in zip(positions, quaternions):
         new_positions.append((p - pose_offset) * scaling)
         new_quaternions.append(
-             #TODO: is order right?
             Rotation.from_matrix((rotation_offset @ Rotation.from_quat(q).as_matrix())).as_quat()
         )
     return times, new_positions, new_quaternions
