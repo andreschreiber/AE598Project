@@ -267,7 +267,7 @@ def vo_nonlinear_optimize(views, tracks, K, max_reprojection_err):
     assert(result.status == symforce.opt.optimizer.Optimizer.Status.SUCCESS)
     # Modifies views and tracks in-place
     sfm.store_results(new_views, new_tracks, K, result, max_reprojection_err=max_reprojection_err)
-    return new_views, new_tracks
+    return new_views, new_tracks, initial_values, result
 
 
 def show_reproj_results(views, tracks, K, distortion, print_raw_reproj=True, show_reproj_histogram=True):
