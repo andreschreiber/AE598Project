@@ -739,7 +739,7 @@ def get_optimizer(views, tracks, acc_meas, gyr_meas, K, T_inC_ofB,
         optimized_keys=optimized_keys,
         debug_stats=True,
         params=Optimizer.Params(
-            iterations=200,
+            iterations=500,
             use_diagonal_damping=True,
             lambda_down_factor=0.1,
             lambda_up_factor=5.,
