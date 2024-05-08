@@ -326,3 +326,65 @@ def get_index_of_next_image(samples, current_index):
         if samples[i]['image_file'] is not None:
             return i
     raise ValueError("No more frames")
+
+
+def imu_collate(data):
+    """ Collets the data from an IMU
+    
+    :param data: visual-inertial data as read by collect_visual_inertial_data
+    :returns: (accelerometer measurements, gyroscope measurements)
+    """
+    w_x = np.stack([d['w_x'] for d in data])
+    w_y = np.stack([d['w_y'] for d in data])
+    w_z = np.stack([d['w_z'] for d in data])
+
+    a_x = np.stack([d['a_x'] for d in data])
+    a_y = np.stack([d['a_y'] for d in data])
+    a_z = np.stack([d['a_z'] for d in data])
+
+    acc_meas = np.vstack([a_x, a_y, a_z]).T
+    gyr_meas = np.vstack([w_x, w_y, w_z]).T
+    
+    return acc_meas, gyr_meas
+
+
+def groundtruth_collate(data, include_bias):
+    """ Collates ground-truth data
+    
+    :parma data: visual-inertial data as read by collect_visual_inertial data
+    :param include_bias: if True, supplies IMU bias from dataset
+    :returns: R_inW_ofB, v_inW_ofB, p_inW_ofB, b_a, b_w
+    """
+    q_x = np.stack([d['groundtruth']['q_x'] for d in data])
+    q_y = np.stack([d['groundtruth']['q_y'] for d in data])
+    q_z = np.stack([d['groundtruth']['q_z'] for d in data])
+    q_w = np.stack([d['groundtruth']['q_w'] for d in data])
+
+    v_x = np.stack([d['groundtruth']['v_x'] for d in data])
+    v_y = np.stack([d['groundtruth']['v_y'] for d in data])
+    v_z = np.stack([d['groundtruth']['v_z'] for d in data])
+
+    p_x = np.stack([d['groundtruth']['p_x'] for d in data])
+    p_y = np.stack([d['groundtruth']['p_y'] for d in data])
+    p_z = np.stack([d['groundtruth']['p_z'] for d in data])
+
+    R_inW_ofB = Rotation.from_quat(np.vstack([q_x, q_y, q_z, q_w]).T)
+    v_inW_ofB = np.vstack([v_x, v_y, v_z]).T
+    p_inW_ofB = np.vstack([p_x, p_y, p_z]).T
+
+    if include_bias:
+        b_w_x = np.stack([d['groundtruth']['b_w_x'] for d in data])
+        b_w_y = np.stack([d['groundtruth']['b_w_y'] for d in data])
+        b_w_z = np.stack([d['groundtruth']['b_w_z'] for d in data])
+
+        b_a_x = np.stack([d['groundtruth']['b_a_x'] for d in data])
+        b_a_y = np.stack([d['groundtruth']['b_a_y'] for d in data])
+        b_a_z = np.stack([d['groundtruth']['b_a_z'] for d in data])
+
+        b_a = np.vstack([b_a_x, b_a_y, b_a_z]).T
+        b_w = np.vstack([b_w_x, b_w_y, b_w_z]).T
+    else:
+        b_a = np.zeros(3)[:,np.newaxis].T
+        b_w = np.zeros(3)[:,np.newaxis].T
+
+    return R_inW_ofB, v_inW_ofB, p_inW_ofB, b_a, b_w
