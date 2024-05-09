@@ -19,13 +19,10 @@ pip install evo --upgrade --no-binary evo
 ``
 
 ### Data
-The data for the project is hosted on Box, at the following link:
-https://uofi.box.com/s/sdy9gdvqym1d7cz0g52tvad3jaly2q31
+The data for the project is hosted on Box, you can download it with use the `download_data` helper script: `bash download_data` or manually with the following link:
+https://uofi.box.com/s/sdy9gdvqym1d7cz0g52tvad3jaly2q31. **Note: this dataset file is quite large (~6 gb).**
 
-Note: this dataset file is quite large (~6 gb).
-
-For proper reading of the data, please move the downloaded data from Box into a subdirectory called ``data``.
-Specifically, the organization should be as follows (where the root ``/`` directory is the directory containing this README file):
+Once downloaded and unziped the data should be in a subdirectory named ``data`` with the following structure (where the root ``/`` directory is the directory containing this README file):
 
 - ``/root``
     - ``README.md``
@@ -42,22 +39,14 @@ Specifically, the organization should be as follows (where the root ``/`` direct
 
 ### Code
 The code is organized as follows:
-``imu_preintegration.py``
-    - Containscode for inertial measurement unit (IMU) pre-integration
-``pose_metrics.py``
-    - Contains code for pose metrics (mostly using the evo package). Ultimately, this code ended up not being used (it is legacy code from before the projected pivoted to focus more on IMU integration into two-view reconstruction rather than full-fledged visual-inertial odometry).
-``sfm.py``
-    - Implementation for structure-from-motion
-``utils.py``
-    - Miscellenous utilities for procedures like dataset loading and processing.
-``vio.py``
-    - Implementation of two-view reconstruction using IMU data (visual-inertial odometry)
-``vo.py``
-    - Implementation of two-view reconstruction without using IMU data (visual odometry)
-``vio_benchmark.ipynb``
-    - Jupyter Notebook for testing visual-inertial odometry.
-``vo_benchmark.ipynb``
-    - Jupyter Notebook for testing visual odometry.
+- ``imu_preintegration.py``:  Contains code for inertial measurement unit (IMU) pre-integration    
+- ``pose_metrics.py``:  Contains code for pose metrics (mostly using the evo package). Ultimately, this code ended up not being used (it is legacy code from before the projected pivoted to focus more on IMU integration into two-view reconstruction rather than full-fledged visual-inertial odometry).
+- ``sfm.py``: Implementation for structure-from-motion
+- ``utils.py``: Miscellenous utilities for procedures like dataset loading and processing.
+- ``vio.py`` : Implementation of two-view reconstruction using IMU data (visual:inertial odometry)
+-``vo.py`` : Implementation of two-view reconstruction without using IMU data (visual odometry)
+- ``vio_benchmark.ipynb``: Jupyter Notebook for testing visual-inertial odometry.
+- ``vo_benchmark.ipynb`` : Jupyter Notebook for testing visual odometry.
 
 The main code to interact with our implementation is in the Jupyter notebooks, which feature implementations using only visual odometry and using visual-inertial odometry.
 More details can be found in the code itself.
