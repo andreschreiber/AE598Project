@@ -52,7 +52,7 @@ The code is organized as follows:
 - ``sfm.py``: Implementation for structure-from-motion
 - ``utils.py``: Miscellenous utilities for procedures like dataset loading and processing.
 - ``vio.py`` : Implementation of two-view reconstruction using IMU data (visual:inertial odometry)
--``vo.py`` : Implementation of two-view reconstruction without using IMU data (visual odometry)
+- ``vo.py`` : Implementation of two-view reconstruction without using IMU data (visual odometry)
 - ``vio_benchmark.ipynb``: Jupyter Notebook for testing visual-inertial odometry.
 - ``vo_benchmark.ipynb`` : Jupyter Notebook for testing visual odometry.
 
