@@ -219,10 +219,10 @@ def show_reproj_results(views, tracks, K, distortion, print_raw_reproj=True, sho
 
         assert(not ((view['R_inC_ofW'] is None) or (view['p_inC_ofW'] is None)))
         print(f' Image {i_view:2d} ({len(e_undist_i):5d} points) : (mean, std, max, min) =' + \
-                f' ({np.mean(e_undist_i):6.2f}, {np.std(e_undist_i):6.2f}, {np.max(e_undist_i):6.2f}, {np.min(e_undist_i):6.2f})')
+                f' ({np.mean(e_undist_i):6.4f}, {np.std(e_undist_i):6.4f}, {np.max(e_undist_i):6.4f}, {np.min(e_undist_i):6.4f})')
         if print_raw_reproj:
             print(f' Image (raw reprojection) {i_view:2d} ({len(e_raw_i):5d} points) : (mean, std, max, min) =' + \
-                f' ({np.mean(e_raw_i):6.2f}, {np.std(e_raw_i):6.2f}, {np.max(e_raw_i):6.2f}, {np.min(e_raw_i):6.2f})')
+                f' ({np.mean(e_raw_i):6.4f}, {np.std(e_raw_i):6.4f}, {np.max(e_raw_i):6.4f}, {np.min(e_raw_i):6.4f})')
     
     if show_reproj_histogram:
         # Figure
@@ -262,7 +262,8 @@ def visualize_predictions(views, tracks, K, distortion):
     assert(len(selected_views) == len(views)) # make sure all views selected
 
     # Create figure
-    axs = plt.figure(figsize=(4*len(selected_views), 4)).subplots(1, len(selected_views))
+    fig =  plt.figure(figsize=(4*len(selected_views), 4))
+    axs = fig.subplots(1, len(selected_views))
 
     # Show each of the extracted views
     for i in range(len(selected_views)):
@@ -291,6 +292,8 @@ def visualize_predictions(views, tracks, K, distortion):
                     [views[m['view_id']]['pts'][m['feature_id']]['pt2d_raw'][1]],
                     'bx', markersize=2
                 )
+
+    fig.tight_layout()
     plt.show()
 
 
