@@ -24,19 +24,25 @@ https://uofi.box.com/s/sdy9gdvqym1d7cz0g52tvad3jaly2q31. **Note: this dataset fi
 
 Once downloaded and unziped the data should be in a subdirectory named ``data`` with the following structure (where the root ``/`` directory is the directory containing this README file):
 
-- ``/root``
-    - ``README.md``
-    - ``data/``
-        - ``kitti/``
-            - ``2011_09_26/`` 
-        - ``mav0/``
-            - ``cam0``
-            - ``cam1``
-            - ``imu0``
-            - ``leica0``
-            - ``state_groundtruth_estimate0``
-            - ``body.yaml``
-
+```
+.
+├── /root
+├── README.md
+├── download_data
+├── .
+├── .
+├── .
+└── data/
+    ├── kitti/
+    │   └── 2011_09_26/
+    └── mav0/
+        ├── cam0
+        ├── cam1
+        ├── imu0
+        ├── leica0
+        ├── state_groundtruth_estimate0
+        └── body.yaml
+```
 ### Code
 The code is organized as follows:
 - ``imu_preintegration.py``:  Contains code for inertial measurement unit (IMU) pre-integration    
