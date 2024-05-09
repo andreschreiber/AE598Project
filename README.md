@@ -19,10 +19,10 @@ pip install evo --upgrade --no-binary evo
 ``
 
 ### Data
-The data used for this project can be found on Box, you can download it with use the `download_data` helper script: 
+The data used for this project can be found on Box, you can download it with use the helper script (**Note: this dataset file is quite large (~6 gb).**): 
 ```bash download_data```
 
-or manually with the following link: https://uofi.box.com/s/sdy9gdvqym1d7cz0g52tvad3jaly2q31. **Note: this dataset file is quite large (~6 gb).**
+or manually with the following link: https://uofi.box.com/s/sdy9gdvqym1d7cz0g52tvad3jaly2q31. 
 
 Once downloaded and unziped the data should be in a subdirectory named ``data`` with the following structure (where the root ``/`` directory is the directory containing this README file):
 
