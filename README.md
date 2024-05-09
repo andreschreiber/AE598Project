@@ -56,6 +56,7 @@ The code is organized as follows:
 - ``vo.py`` : Implementation of two-view reconstruction without using IMU data (visual odometry)
 - ``vio_benchmark.ipynb``: Jupyter Notebook for testing visual-inertial odometry.
 - ``vo_benchmark.ipynb`` : Jupyter Notebook for testing visual odometry.
+- ``imu_preintegration.ipynb`` : Jupyter Notebook for testing inertial measurement unit (IMU) pre-integration.
 
 The main code to interact with our implementation is in the Jupyter notebooks, which feature implementations using only visual odometry and using visual-inertial odometry.
 More details can be found in the code itself.
