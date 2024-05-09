@@ -185,7 +185,7 @@ def compute_ape(traj_1, traj_2,
     return evaluation_results
 
 
-def rotational_error(R1, R2):
+def rotational_error(R1, R2, useDegrees=True):
     """ Compute a scalar metric for error between two rotations
     
     Source: https://stackoverflow.com/questions/6522108/error-between-two-rotations
@@ -195,6 +195,8 @@ def rotational_error(R1, R2):
     """
     rotator, _ = cv2.Rodrigues(R1.dot(R2.T))
     error = np.linalg.norm(rotator)
+    if useDegrees:
+        return error * 180 / np.pi
     return error
 
 
