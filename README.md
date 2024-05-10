@@ -2,6 +2,11 @@
 
 ### Dependencies
 This project has dependencies that include all dependencies for the SfM homework in the course. That is, the standard dependencies plus rerun (as needed for the SfM homework).
+Instructions for such dependencies can be found here:
+https://github.com/tbretl/ae598-3dv/blob/main/README.md
+and here
+https://github.com/tbretl/ae598-3dv/blob/main/homework/03_sfm/README.md
+
 In addition, PyKITTI and Pandas are also required dependencies for reproducing our results.
 PyKITTI can be installed with:
 ``
@@ -23,7 +28,7 @@ The data used for this project can be found on Box, you can download it with use
 
 ```bash download_data```
 
-or manually with the following link: https://uofi.box.com/s/sdy9gdvqym1d7cz0g52tvad3jaly2q31. 
+or manually with the following link: https://uofi.box.com/s/sdy9gdvqym1d7cz0g52tvad3jaly2q31.
 
 Once downloaded and unziped the data should be in a subdirectory named ``data`` with the following structure (where the root ``/`` directory is the directory containing this README file):
 
