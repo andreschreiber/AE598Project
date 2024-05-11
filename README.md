@@ -53,6 +53,7 @@ Once downloaded and unziped the data should be in a subdirectory named ``data`` 
 ```
 ### Code
 The code is organized as follows:
+- ``results``: contains pdfs of the notebooks containing the experiment results that were reported in the [final project report][report]
 - ``imu_preintegration.py``:  Contains code for inertial measurement unit (IMU) pre-integration    
 - ``pose_metrics.py``:  Contains code for pose metrics (mostly using the evo package). Ultimately, this code ended up not being used (it is legacy code from before the projected pivoted to focus more on IMU integration into two-view reconstruction rather than full-fledged visual-inertial odometry).
 - ``sfm.py``: Implementation for structure-from-motion
@@ -64,4 +65,6 @@ The code is organized as follows:
 - ``imu_preintegration.ipynb`` : Jupyter Notebook for testing inertial measurement unit (IMU) pre-integration.
 
 The main code to interact with our implementation is in the Jupyter notebooks, which feature implementations using only visual odometry and using visual-inertial odometry.
-More details can be found in the code itself.
+More details can be found in the code itself and our [final report][report]
+
+[report]: https://www.overleaf.com/read/hfdrgdkncfxp#fde46c
